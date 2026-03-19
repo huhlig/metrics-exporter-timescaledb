@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "metrics_exporter_timescaledb",
+  "project_id": "030b2662-e421-440e-8f34-a5a9cde5d3be"
+}
