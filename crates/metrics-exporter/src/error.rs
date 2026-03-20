@@ -14,4 +14,13 @@ pub enum Error {
 
     #[error("Anyhow error: {0}")]
     Anyhow(#[from] AnyhowError),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
+
+    #[error("Bad request: {0}")]
+    BadRequest(String),
 }

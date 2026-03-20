@@ -25,4 +25,5 @@ chrono.workspace = true
 
 metrics-exporter = { path = "../metrics-exporter" }
 
+sqlx.workspace = true
 anyhow.workspace = true

@@ -9,6 +9,8 @@ pub struct Label {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metric {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<i64>,
     pub name: String,
     #[serde(flatten)]
     pub value: MetricValue,

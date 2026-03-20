@@ -2,6 +2,19 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
+## Code Standards
+
+* Ensure all code is 2024 Rust Edition in mind.
+* Ensure all unit tests, integration tests, benchmarks, and doc tests are enabled and pass.
+* Ensure that the code is well-documented with examples both documentation and examples are up to date.
+* Ensure all stubbed code contains a todo!("<reason>") macro and a beads entry is created.
+* Ensure code is clean of issues using clippy, and formatted with cargo fmt before committing.
+
+## Tools & Utilities
+
+* Leverage `cargo nextest` for testing. 
+* Use clippy instead of full builds whenever possible. 
+
 ## Beads Quick Reference
 
 ```bash

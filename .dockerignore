@@ -1,0 +1,8 @@
+**/target
+**/.git
+**/.beads
+**/Cargo.lock
+**/*.md
+**/.env
+**/.env.*
+!**/.env.example

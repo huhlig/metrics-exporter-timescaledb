@@ -31,3 +31,6 @@ axum = "0.8"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "cors"] }
 tower-layers = "0.12"
+
+utoipa = "4.2"
+utoipa-gen = "4.2"

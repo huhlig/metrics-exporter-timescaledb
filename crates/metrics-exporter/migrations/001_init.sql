@@ -11,7 +11,15 @@ CREATE TABLE IF NOT EXISTS metrics (
 SELECT create_hypertable('metrics', 'timestamp', chunk_time_interval => INTERVAL '1 day');
 
 CREATE INDEX IF NOT EXISTS idx_metrics_name ON metrics (name);
+CREATE INDEX IF NOT EXISTS idx_metrics_name_timestamp ON metrics (name, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_metrics_labels ON metrics USING GIN (labels);
+
+ALTER TABLE metrics SET (
+    timescaledb.compression,
+    timescaledb.compress_segmentby = 'name'
+);
+
+SELECT add_compression_policy('metrics', INTERVAL '1 hour');
 
 -- Continuous aggregate for 1-minute rollups
 CREATE MATERIALIZED VIEW IF NOT EXISTS metrics_1m
@@ -19,19 +27,29 @@ WITH (timescaledb.continuous) AS
 SELECT name,
        time_bucket('1 minute', timestamp) AS bucket,
        labels,
-       jsonb_object_agg(label_key, label_value) AS label_values,
-       AVG((value->>'value')::numeric) AS avg_value,
-       MIN((value->>'value')::numeric) AS min_value,
-       MAX((value->>'value')::numeric) AS max_value,
+       (value->>'type')::text AS metric_type,
+       CASE
+           WHEN value->>'type' = 'Gauge' THEN AVG((value->>'value')::numeric)
+           WHEN value->>'type' = 'Counter' THEN SUM((value->>'value')::bigint)::numeric
+           ELSE NULL
+       END AS avg_value,
+       MIN(
+           CASE
+               WHEN value->>'type' = 'Gauge' THEN (value->>'value')::numeric
+               WHEN value->>'type' = 'Counter' THEN (value->>'value')::bigint::numeric
+               ELSE NULL
+           END
+       ) AS min_value,
+       MAX(
+           CASE
+               WHEN value->>'type' = 'Gauge' THEN (value->>'value')::numeric
+               WHEN value->>'type' = 'Counter' THEN (value->>'value')::bigint::numeric
+               ELSE NULL
+           END
+       ) AS max_value,
        COUNT(*) AS count
-FROM (
-    SELECT name, timestamp, labels,
-           jsonb_object_keys(labels) AS label_key,
-           jsonb_array_elements(jsonb_extract_path(value, 'bounds')) AS label_value,
-           value
-    FROM metrics
-) sub
-GROUP BY name, bucket, labels;
+FROM metrics
+GROUP BY name, bucket, labels, metric_type;
 
 SELECT add_continuous_aggregate_policy('metrics_1m',
     start_offset => INTERVAL '1 hour',
@@ -44,12 +62,29 @@ WITH (timescaledb.continuous) AS
 SELECT name,
        time_bucket('5 minutes', timestamp) AS bucket,
        labels,
-       AVG((value->>'value')::numeric) AS avg_value,
-       MIN((value->>'value')::numeric) AS min_value,
-       MAX((value->>'value')::numeric) AS max_value,
+       (value->>'type')::text AS metric_type,
+       CASE
+           WHEN value->>'type' = 'Gauge' THEN AVG((value->>'value')::numeric)
+           WHEN value->>'type' = 'Counter' THEN SUM((value->>'value')::bigint)::numeric
+           ELSE NULL
+       END AS avg_value,
+       MIN(
+           CASE
+               WHEN value->>'type' = 'Gauge' THEN (value->>'value')::numeric
+               WHEN value->>'type' = 'Counter' THEN (value->>'value')::bigint::numeric
+               ELSE NULL
+           END
+       ) AS min_value,
+       MAX(
+           CASE
+               WHEN value->>'type' = 'Gauge' THEN (value->>'value')::numeric
+               WHEN value->>'type' = 'Counter' THEN (value->>'value')::bigint::numeric
+               ELSE NULL
+           END
+       ) AS max_value,
        COUNT(*) AS count
 FROM metrics
-GROUP BY name, bucket, labels;
+GROUP BY name, bucket, labels, metric_type;
 
 SELECT add_continuous_aggregate_policy('metrics_5m',
     start_offset => INTERVAL '1 hour',
@@ -62,17 +97,34 @@ WITH (timescaledb.continuous) AS
 SELECT name,
        time_bucket('1 hour', timestamp) AS bucket,
        labels,
-       AVG((value->>'value')::numeric) AS avg_value,
-       MIN((value->>'value')::numeric) AS min_value,
-       MAX((value->>'value')::numeric) AS max_value,
+       (value->>'type')::text AS metric_type,
+       CASE
+           WHEN value->>'type' = 'Gauge' THEN AVG((value->>'value')::numeric)
+           WHEN value->>'type' = 'Counter' THEN SUM((value->>'value')::bigint)::numeric
+           ELSE NULL
+       END AS avg_value,
+       MIN(
+           CASE
+               WHEN value->>'type' = 'Gauge' THEN (value->>'value')::numeric
+               WHEN value->>'type' = 'Counter' THEN (value->>'value')::bigint::numeric
+               ELSE NULL
+           END
+       ) AS min_value,
+       MAX(
+           CASE
+               WHEN value->>'type' = 'Gauge' THEN (value->>'value')::numeric
+               WHEN value->>'type' = 'Counter' THEN (value->>'value')::bigint::numeric
+               ELSE NULL
+           END
+       ) AS max_value,
        COUNT(*) AS count
 FROM metrics
-GROUP BY name, bucket, labels;
+GROUP BY name, bucket, labels, metric_type;
 
 SELECT add_continuous_aggregate_policy('metrics_1h',
     start_offset => INTERVAL '1 day',
     end_offset => INTERVAL '1 hour',
     schedule_interval => INTERVAL '1 hour');
 
--- Retention policy (optional, uncomment to enable)
+-- Retention policy (disabled by default, uncomment to enable)
 -- SELECT add_retention_policy('metrics', INTERVAL '90 days');

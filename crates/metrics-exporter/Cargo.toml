@@ -17,3 +17,12 @@ thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 async-trait.workspace = true
+
+axum.workspace = true
+tower-http.workspace = true
+
+utoipa.workspace = true
+utoipa-gen.workspace = true
+
+[dev-dependencies]
+sqlx.workspace = true
